@@ -51,6 +51,13 @@ class TreeDropdownField extends FormField {
 	);
 	
 	/**
+	 * @var int The total number of leaf nodes that can be marked for any one request, before a 'Too many items' message
+	 * is displayed in the tree. (If there is too many, you can still search for some, where the limit is not applied).
+	 * @config
+	 */
+	private static $node_threshold_leaf = 30;
+
+	/**
 	 * @ignore
 	 */
 	protected $sourceObject, $keyField, $labelField, $filterCallback,
@@ -276,7 +283,7 @@ class TreeDropdownField extends FormField {
 		if ($this->filterCallback || $this->sourceObject == 'Folder' || $this->search != "" )
 			$obj->setMarkingFilterFunction(array($this, "filterMarking"));
 		
-		$obj->markPartialTree();
+		$obj->markPartialTree($this->config()->node_threshold_leaf);
 		
 		// allow to pass values to be selected within the ajax request
 		if( isset($_REQUEST['forceValue']) || $this->value ) {
@@ -308,7 +315,7 @@ class TreeDropdownField extends FormField {
 		// Limit the amount of nodes shown for performance reasons.
 		// Skip the check if we're filtering the tree, since its not clear how many children will
 		// match the filter criteria until they're queried (and matched up with previously marked nodes).
-		$nodeThresholdLeaf = Config::inst()->get('Hierarchy', 'node_threshold_leaf');
+		$nodeThresholdLeaf = $this->config()->node_threshold_leaf;
 		if($nodeThresholdLeaf && !$this->filterCallback && !$this->search) {
 			$className = $this->sourceObject;
 			$nodeCountCallback = function($parent, $numChildren) use($className, $nodeThresholdLeaf) {

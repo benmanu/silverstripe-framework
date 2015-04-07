@@ -203,7 +203,9 @@ class Hierarchy extends DataExtension {
 
 		// foreach can't handle an ever-growing $nodes list
 		while(list($id, $node) = each($this->markedNodes)) {
-			$children = $this->markChildren($node, $context, $childrenMethod, $numChildrenMethod);
+			$children = $this->markChildren($node, $context, $childrenMethod, 
+				$numChildrenMethod, $nodeCountThreshold);
+
 			if($nodeCountThreshold && sizeof($this->markedNodes) > $nodeCountThreshold) {
 				// Undo marking children as opened since they're lazy loaded
 				if($children) foreach($children as $child) $child->markClosed();
@@ -267,10 +269,14 @@ class Hierarchy extends DataExtension {
 	/**
 	 * Mark all children of the given node that match the marking filter.
 	 * @param DataObject $node Parent node.
+	 * @param $context
+	 * @param String $childrenMethod
+	 * @param String $numChildrenMethod
+	 * @param int $nodeCountThreshold
 	 * @return DataList
 	 */
 	public function markChildren($node, $context = null, $childrenMethod = "AllChildrenIncludingDeleted",
-			$numChildrenMethod = "numChildren") {
+			$numChildrenMethod = "numChildren", $nodeCountThreshold = null) {
 		if($node->hasMethod($childrenMethod)) {
 			$children = $node->$childrenMethod($context);
 		} else {
@@ -279,7 +285,7 @@ class Hierarchy extends DataExtension {
 		}
 		
 		$node->markExpanded();
-		if($children) {
+		if($children && (!$nodeCountThreshold || $children->Count() <= $nodeCountThreshold)) {
 			foreach($children as $child) {
 				$markingMatches = $this->markingFilterMatches($child);
 				if($markingMatches) {
